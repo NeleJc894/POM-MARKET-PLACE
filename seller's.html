@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PMS Seller Panel</title>
+    <script src="https://jsdelivr.net"></script>
+    <style>
+        body { font-family: sans-serif; background: #F8F9FA; margin: 0; }
+        header { background: #0A2540; color: white; padding: 15px; font-weight: bold; }
+        .box { max-width: 450px; margin: 30px auto; background: white; padding: 25px; border-radius: 8px; border: 1px solid #EAEAEA; }
+        input, textarea, select { width: 100%; padding: 10px; margin-top: 5px; margin-bottom: 15px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
+        .btn { background: #008751; color: white; border: none; padding: 12px; width: 100%; font-weight: bold; border-radius: 4px; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+    <header>POM MARKET SITE - Seller Upload Portal</header>
+
+    <div class="box">
+        <h2>List an Item or Service</h2>
+        <form onsubmit="postItem(event)">
+            <label>Item Name</label>
+            <input type="text" id="title" required placeholder="e.g., iPhone 11 Pro">
+
+            <label>Price (PGK Kina)</label>
+            <input type="number" id="price" required placeholder="e.g., 1200">
+
+            <label>Your Suburb / Location</label>
+            <select id="location">
+                <option value="Waigani">Waigani</option>
+                <option value="Boroko">Boroko</option>
+                <option value="Gerehu">Gerehu</option>
+                <option value="Gordon">Gordon</option>
+                <option value="Hohola">Hohola</option>
+                <option value="Downtown">Downtown / Town</option>
+            </select>
+
+            <label>Description & Contact Details</label>
+            <textarea id="desc" rows="4" required placeholder="Describe condition. Include your phone number so buyers can settle payment offline via BSP mobile app transfer."></textarea>
+
+            <button type="submit" class="btn">Publish Live</button>
+        </form>
+    </div>
+
+    <script>
+        // CHANGE THESE ENTRIES TO MATCH YOUR SUPABASE CREDENTIALS
+        const URL = "YOUR_SUPABASE_URL_HERE";
+        const KEY = "YOUR_SUPABASE_ANON_KEY_HERE";
+        const supabaseClient = supabase.createClient(URL, KEY);
+
+        async function postItem(event) {
+            event.preventDefault();
+            const t = document.getElementById('title').value.trim();
+            const p = document.getElementById('price').value;
+            const l = document.getElementById('location').value;
+            const d = document.getElementById('desc').value.trim();
+
+            const { error } = await supabaseClient.from('products').insert([{ title: t, price_pgk: p, location: l, description: d }]);
+            if (error) { alert('Upload failed. Check database permission rules.'); } else { alert('Product is now Live!'); location.reload(); }
+        }
+    </script>
+</body>
+</html>
