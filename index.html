@@ -3,44 +3,43 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PMS Seller Panel</title>
+    <title>POM MARKET SITE</title>
     <script src="https://jsdelivr.net"></script>
     <style>
-        body { font-family: sans-serif; background: #F8F9FA; margin: 0; }
-        header { background: #0A2540; color: white; padding: 15px; font-weight: bold; }
-        .box { max-width: 450px; margin: 30px auto; background: white; padding: 25px; border-radius: 8px; border: 1px solid #EAEAEA; }
-        input, textarea, select { width: 100%; padding: 10px; margin-top: 5px; margin-bottom: 15px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
-        .btn { background: #008751; color: white; border: none; padding: 12px; width: 100%; font-weight: bold; border-radius: 4px; cursor: pointer; }
+        :root { --primary: #0A2540; --accent: #00D4B2; --success: #008751; --light: #F8F9FA; }
+        body { font-family: sans-serif; margin: 0; background: var(--light); color: #333; }
+        header { background: var(--primary); color: white; padding: 15px 20px; display: flex; align-items: center; gap: 12px; }
+        .pms-icon { background: linear-gradient(135deg, var(--accent), #00A389); color: var(--primary); font-weight: 900; width: 40px; height: 40px; border-radius: 8px; display: flex; align-items: center; justify-content: center; }
+        .container { max-width: 800px; margin: 20px auto; padding: 0 15px; }
+        .grid { display: grid; grid-template-columns: 1fr; gap: 15px; }
+        @media(min-width: 600px) { .grid { grid-template-columns: 1fr 1fr; } }
+        .card { background: white; border-radius: 8px; padding: 15px; border: 1px solid #EAEAEA; display: flex; flex-direction: column; justify-content: space-between; }
+        .price { color: var(--success); font-weight: bold; font-size: 1.3rem; margin: 10px 0; }
+        .btn { background: var(--primary); color: white; border: none; padding: 10px; border-radius: 4px; cursor: pointer; width: 100%; font-weight: bold; }
+        .btn-buy { background: var(--success); }
+        .modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); width: 90%; max-width: 400px; z-index: 1000; }
+        .overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 999; }
     </style>
 </head>
 <body>
 
-    <header>POM MARKET SITE - Seller Upload Portal</header>
+    <header>
+        <div class="pms-icon">PMS</div>
+        <div style="font-size: 1.2rem; font-weight: bold;">POM MARKET SITE</div>
+    </header>
 
-    <div class="box">
-        <h2>List an Item or Service</h2>
-        <form onsubmit="postItem(event)">
-            <label>Item Name</label>
-            <input type="text" id="title" required placeholder="e.g., iPhone 11 Pro">
+    <div class="container">
+        <h2>Active Port Moresby Listings</h2>
+        <div id="catalog" class="grid">Loading items...</div>
+    </div>
 
-            <label>Price (PGK Kina)</label>
-            <input type="number" id="price" required placeholder="e.g., 1200">
-
-            <label>Your Suburb / Location</label>
-            <select id="location">
-                <option value="Waigani">Waigani</option>
-                <option value="Boroko">Boroko</option>
-                <option value="Gerehu">Gerehu</option>
-                <option value="Gordon">Gordon</option>
-                <option value="Hohola">Hohola</option>
-                <option value="Downtown">Downtown / Town</option>
-            </select>
-
-            <label>Description & Contact Details</label>
-            <textarea id="desc" rows="4" required placeholder="Describe condition. Include your phone number so buyers can settle payment offline via BSP mobile app transfer."></textarea>
-
-            <button type="submit" class="btn">Publish Live</button>
-        </form>
+    <div class="overlay" id="overlay" onclick="closeModal()"></div>
+    <div class="modal" id="buyModal">
+        <h3>Contact Seller</h3>
+        <p id="modal-item-title" style="font-weight: bold;"></p>
+        <input type="text" id="buyerContact" placeholder="Your Phone Number or WhatsApp Link" style="width:100%; padding:10px; margin-bottom:10px; box-sizing:border-box; border:1px solid #ccc; border-radius:4px;"><br>
+        <textarea id="buyerMsg" rows="3" placeholder="Write your question or offer here..." style="width:100%; padding:10px; margin-bottom:10px; box-sizing:border-box; border:1px solid #ccc; border-radius:4px Papua New Guinea style;"></textarea>
+        <button class="btn btn-buy" onclick="sendInquiry()">Submit Inquiry</button>
     </div>
 
     <script>
@@ -49,16 +48,63 @@
         const KEY = "YOUR_SUPABASE_ANON_KEY_HERE";
         const supabaseClient = supabase.createClient(URL, KEY);
 
-        async function postItem(event) {
-            event.preventDefault();
-            const t = document.getElementById('title').value;
-            const p = document.getElementById('price').value;
-            const l = document.getElementById('location').value;
-            const d = document.getElementById('desc').value;
+        let currentId = null;
 
-            const { error } = await supabaseClient.from('products').insert([{ title: t, price_pgk: p, location: l, description: d }]);
-            if (error) { alert('Upload failed.'); } else { alert('Product is now Live!'); location.reload(); }
+        async function loadItems() {
+            const { data, error } = await supabaseClient.from('products').select('*').eq('is_available', true).order('created_at', { ascending: false });
+            if (error) { document.getElementById('catalog').innerText = "Error connecting to database."; return; }
+            
+            const root = document.getElementById('catalog');
+            root.innerHTML = data.length === 0 ? '<p>No items for sale yet.</p>' : '';
+            
+            data.forEach(item => {
+                root.innerHTML += `
+                    <div class="card">
+                        <div>
+                            <h3>${escapeHtml(item.title)}</h3>
+                            <p>${escapeHtml(item.description)}</p>
+                        </div>
+                        <div>
+                            <div class="price">K${item.price_pgk}.00</div>
+                            <p style="font-size:0.85rem; color:#666;">📍 Location: ${escapeHtml(item.location)}</p>
+                            <button class="btn btn-buy" onclick="openModal(${item.id}, '${escapeJsString(item.title)}')">Buy / Ask Price</button>
+                        </div>
+                    </div>
+                `;
+            });
         }
+
+        function openModal(id, title) {
+            currentId = id;
+            document.getElementById('modal-item-title').innerText = title;
+            document.getElementById('buyModal').style.display = 'block';
+            document.getElementById('overlay').style.display = 'block';
+        }
+
+        function closeModal() {
+            document.getElementById('buyModal').style.display = 'none';
+            document.getElementById('overlay').style.display = 'none';
+        }
+
+        async function sendInquiry() {
+            const contact = document.getElementById('buyerContact').value.trim();
+            const msg = document.getElementById('buyerMsg').value.trim();
+            if(!contact || !msg) { alert('Please fill in both fields.'); return; }
+
+            const { error } = await supabaseClient.from('orders').insert([{ product_id: currentId, buyer_contact: contact, buyer_message: msg }]);
+            if (error) { alert('Failed to send inquiry.'); } else { alert('Inquiry Sent Successfully!'); closeModal(); }
+        }
+
+        function escapeHtml(str) {
+            if(!str) return '';
+            return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+        }
+        function escapeJsString(str) {
+            if(!str) return '';
+            return str.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '\\"');
+        }
+
+        window.onload = loadItems;
     </script>
 </body>
 </html>
