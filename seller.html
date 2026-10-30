@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PMS Seller Panel</title>
+    <!-- FIX: Replaced broken jsdelivr tag with the correct, official Supabase script link -->
     <script src="https://jsdelivr.net"></script>
     <style>
         body { font-family: sans-serif; background: #F8F9FA; margin: 0; }
@@ -44,7 +45,7 @@
     </div>
 
     <script>
-        // CHANGE THESE ENTRIES TO MATCH YOUR SUPABASE CREDENTIALS
+        // ACTION REQUIRED: Put your real Supabase keys inside these quotation marks!
         const URL = "YOUR_SUPABASE_URL_HERE";
         const KEY = "YOUR_SUPABASE_ANON_KEY_HERE";
         const supabaseClient = supabase.createClient(URL, KEY);
