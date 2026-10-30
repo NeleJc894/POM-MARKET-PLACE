@@ -43,9 +43,9 @@
     </div>
 
     <script>
-        // CONFIGURATION: Replace placeholders with real values from Supabase Settings -> API [2]
-        const SUPABASE_URL = "https://ibapfafstteqyrmpnhvo.supabase.co";
-        const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImliYXBmYWZzdHRlcXlybXBuaHZvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTMxMDc2NjYsImV4cCI6MjEwODY4MzY2Nn0.HV40B7DHZeQZHOqscN0CmTul-gOD_SG-2rDv9vcPy0w ";
+        // INPUT CONFIGURATION: Replace placeholders with real values from Supabase Settings -> API
+        const SUPABASE_URL = "YOUR_SUPABASE_URL_HERE";
+        const SUPABASE_KEY = "YOUR_SUPABASE_ANON_KEY_HERE";
         
         let currentId = null;
 
@@ -70,10 +70,8 @@
             return str.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '\\"');
         }
 
-        // Native alternative to database library calls using built-in fetch [1]
         async function loadItems() {
             const catalogDiv = document.getElementById('catalog');
-            
             if (SUPABASE_URL.includes("YOUR_SUPABASE_URL") || SUPABASE_KEY.includes("YOUR_SUPABASE_ANON")) {
                 catalogDiv.innerHTML = `<p class="error-msg">Setup Error: You have not replaced the placeholder tokens with your active Supabase API keys yet.</p>`;
                 return;
@@ -89,10 +87,7 @@
                     }
                 });
 
-                if (!response.ok) {
-                    throw new Error(`Database server responded with status code: ${response.status}`);
-                }
-
+                if (!response.ok) throw new Error(`Database error: ${response.status}`);
                 const data = await response.json();
                 catalogDiv.innerHTML = data.length === 0 ? '<p>No items for sale yet.</p>' : '';
                 
@@ -130,11 +125,7 @@
                         'Content-Type': 'application/json',
                         'Prefer': 'return=minimal'
                     },
-                    body: JSON.stringify({
-                        product_id: currentId,
-                        buyer_contact: contact,
-                        buyer_message: msg
-                    })
+                    body: JSON.stringify({ product_id: currentId, buyer_contact: contact, buyer_message: msg })
                 });
 
                 if (!response.ok) throw new Error("Could not log inquiry row data.");
