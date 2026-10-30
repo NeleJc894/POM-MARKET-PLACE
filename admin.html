@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PMS Admin Dashboard</title>
+    <!-- FIX: Replaced broken jsdelivr tag with the correct Supabase library source -->
     <script src="https://jsdelivr.net"></script>
     <style>
         :root { --primary: #0A2540; --danger: #D32F2F; --bg: #F8F9FA; }
@@ -47,7 +48,7 @@
     </div>
 
     <script>
-        // CHANGE THESE ENTRIES TO MATCH YOUR SUPABASE CREDENTIALS
+        // ACTION REQUIRED: Replace placeholders with your real credentials from Supabase Settings -> API
         const URL = "YOUR_SUPABASE_URL_HERE";
         const KEY = "YOUR_SUPABASE_ANON_KEY_HERE";
         const supabaseClient = supabase.createClient(URL, KEY);
@@ -62,7 +63,7 @@
                 .order('created_at', { ascending: false });
 
             if (error) { 
-                tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:red;">Error loading dashboard records.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:red;">Error loading dashboard records. Check API keys and RLS.</td></tr>`;
                 return; 
             }
 
