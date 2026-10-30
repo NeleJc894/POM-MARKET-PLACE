@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>POM MARKET SITE</title>
-    <!-- FIX: Added the correct, unbroken official Supabase script link below -->
     <script src="https://jsdelivr.net"></script>
     <style>
         :root { --primary: #0A2540; --accent: #00D4B2; --success: #008751; --light: #F8F9FA; }
@@ -44,36 +43,12 @@
     </div>
 
     <script>
-        // ACTION REQUIRED: Put your real Supabase keys inside these quotation marks!
+        // ACTION REQUIRED: Ensure your exact keys are pasted inside these quotes!
         const URL = "YOUR_SUPABASE_URL_HERE";
         const KEY = "YOUR_SUPABASE_ANON_KEY_HERE";
-        const supabaseClient = supabase.createClient(URL, KEY);
-
+        
+        let supabaseClient = null;
         let currentId = null;
-
-        async function loadItems() {
-            const { data, error } = await supabaseClient.from('products').select('*').eq('is_available', true).order('created_at', { ascending: false });
-            if (error) { document.getElementById('catalog').innerText = "Error connecting to database."; return; }
-            
-            const root = document.getElementById('catalog');
-            root.innerHTML = data.length === 0 ? '<p>No items for sale yet.</p>' : '';
-            
-            data.forEach(item => {
-                root.innerHTML += `
-                    <div class="card">
-                        <div>
-                            <h3>${escapeHtml(item.title)}</h3>
-                            <p>${escapeHtml(item.description)}</p>
-                        </div>
-                        <div>
-                            <div class="price">K${item.price_pgk}.00</div>
-                            <p style="font-size:0.85rem; color:#666;">📍 Location: ${escapeHtml(item.location)}</p>
-                            <button class="btn btn-buy" onclick="openModal(${item.id}, '${escapeJsString(item.title)}')">Buy / Ask Price</button>
-                        </div>
-                    </div>
-                `;
-            });
-        }
 
         function openModal(id, title) {
             currentId = id;
@@ -92,8 +67,14 @@
             const msg = document.getElementById('buyerMsg').value.trim();
             if(!contact || !msg) { alert('Please fill in both fields.'); return; }
 
-            const { error } = await supabaseClient.from('orders').insert([{ product_id: currentId, buyer_contact: contact, buyer_message: msg }]);
-            if (error) { alert('Failed to send inquiry.'); } else { alert('Inquiry Sent Successfully!'); closeModal(); }
+            try {
+                const { error } = await supabaseClient.from('orders').insert([{ product_id: currentId, buyer_contact: contact, buyer_message: msg }]);
+                if (error) throw error;
+                alert('Inquiry Sent Successfully!'); 
+                closeModal();
+            } catch (err) {
+                alert('Submission error: ' + err.message);
+            }
         }
 
         function escapeHtml(str) {
@@ -105,7 +86,55 @@
             return str.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '\\"');
         }
 
-        window.onload = loadItems;
+        // DECOUPLED LIFECYCLE: Self-executing initialization module bypassing window.onload locks
+        async function initSystem() {
+            const catalogDiv = document.getElementById('catalog');
+            
+            if (URL === "YOUR_SUPABASE_URL_HERE" || KEY === "YOUR_SUPABASE_ANON_KEY_HERE") {
+                catalogDiv.innerHTML = `<p style="color:red; font-weight:bold;">Setup Error: You have not replaced the placeholders with your real Supabase API keys yet.</p>`;
+                return;
+            }
+
+            try {
+                if (typeof supabase === 'undefined') {
+                    throw new Error("The Supabase CDN script failed to load. Check your device internet bundle or connectivity.");
+                }
+                
+                supabaseClient = supabase.createClient(URL, KEY);
+                
+                const { data, error } = await supabaseClient
+                    .from('products')
+                    .select('*')
+                    .eq('is_available', true)
+                    .order('created_at', { ascending: false });
+                
+                if (error) throw error;
+                
+                catalogDiv.innerHTML = data.length === 0 ? '<p>No items for sale yet.</p>' : '';
+                
+                data.forEach(item => {
+                    catalogDiv.innerHTML += `
+                        <div class="card">
+                            <div>
+                                <h3>${escapeHtml(item.title)}</h3>
+                                <p>${escapeHtml(item.description)}</p>
+                            </div>
+                            <div>
+                                <div class="price">K${item.price_pgk}.00</div>
+                                <p style="font-size:0.85rem; color:#666;">📍 Location: ${escapeHtml(item.location)}</p>
+                                <button class="btn btn-buy" onclick="openModal(${item.id}, '${escapeJsString(item.title)}')">Buy / Ask Price</button>
+                            </div>
+                        </div>
+                    `;
+                });
+            } catch (err) {
+                catalogDiv.innerHTML = `<p style="color:red; font-weight:bold;">Connection Blocked: ${escapeHtml(err.message)}</p>`;
+                console.error(err);
+            }
+        }
+
+        // Immediately fire logic right after DOM rendering
+        initSystem();
     </script>
 </body>
 </html>
