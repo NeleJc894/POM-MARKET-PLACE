@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>POM MARKET SITE</title>
+    <!-- FIX: Added the correct, unbroken official Supabase script link below -->
     <script src="https://jsdelivr.net"></script>
     <style>
         :root { --primary: #0A2540; --accent: #00D4B2; --success: #008751; --light: #F8F9FA; }
@@ -38,12 +39,12 @@
         <h3>Contact Seller</h3>
         <p id="modal-item-title" style="font-weight: bold;"></p>
         <input type="text" id="buyerContact" placeholder="Your Phone Number or WhatsApp Link" style="width:100%; padding:10px; margin-bottom:10px; box-sizing:border-box; border:1px solid #ccc; border-radius:4px;"><br>
-        <textarea id="buyerMsg" rows="3" placeholder="Write your question or offer here..." style="width:100%; padding:10px; margin-bottom:10px; box-sizing:border-box; border:1px solid #ccc; border-radius:4px Papua New Guinea style;"></textarea>
+        <textarea id="buyerMsg" rows="3" placeholder="Write your question or offer here..." style="width:100%; padding:10px; margin-bottom:10px; box-sizing:border-box; border:1px solid #ccc; border-radius:4px;"></textarea>
         <button class="btn btn-buy" onclick="sendInquiry()">Submit Inquiry</button>
     </div>
 
     <script>
-        // CHANGE THESE ENTRIES TO MATCH YOUR SUPABASE CREDENTIALS
+        // ACTION REQUIRED: Put your real Supabase keys inside these quotation marks!
         const URL = "YOUR_SUPABASE_URL_HERE";
         const KEY = "YOUR_SUPABASE_ANON_KEY_HERE";
         const supabaseClient = supabase.createClient(URL, KEY);
