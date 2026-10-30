@@ -65,7 +65,7 @@
                     body: JSON.stringify({ title: t, price_pgk: p, location: l, description: d })
                 });
 
-                if (!response.ok) throw new Error("Server rejected entry insert profile.");
+                if (!response.ok) throw new Error("Server rejected entry.");
                 alert('Product is now Live!');
                 location.reload();
             } catch (err) {
