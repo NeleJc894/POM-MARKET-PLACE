@@ -4,28 +4,35 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PMS Seller Panel</title>
+    <script src="https://jsdelivr.net"></script>
     <style>
         body { font-family: sans-serif; background: #F8F9FA; margin: 0; }
-        header { background: #0A2540; color: white; padding: 15px; font-weight: bold; }
-        .box { max-width: 450px; margin: 30px auto; background: white; padding: 25px; border-radius: 8px; border: 1px solid #EAEAEA; }
+        header { background: #0A2540; color: white; padding: 15px; font-weight: bold; display:flex; justify-content:space-between; align-items:center; }
+        .box { max-width: 450px; margin: 30px auto; background: white; padding: 25px; border-radius: 8px; border: 1px solid #EAEAEA; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
         input, textarea, select { width: 100%; padding: 10px; margin-top: 5px; margin-bottom: 15px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
-        .btn { background: #008751; color: white; border: none; padding: 12px; width: 100%; font-weight: bold; border-radius: 4px; cursor: pointer; }
+        .btn { background: #FF6600; color: white; border: none; padding: 12px; width: 100%; font-weight: bold; border-radius: 4px; cursor: pointer; }
+        .profile-badge { font-size: 0.85rem; background: #E2E8F0; color: #0A2540; padding: 5px 10px; border-radius: 4px; font-weight: normal; margin-top: 5px; display: inline-block; line-height: 1.4; }
     </style>
 </head>
 <body>
 
-    <header>POM MARKET SITE - Seller Upload Portal</header>
+    <header>
+        <span>POM MARKET SITE - Seller Product Dashboard</span>
+        <a href="index.html" style="color:white; text-decoration:none; font-size:0.9rem;">← Go to Marketplace</a>
+    </header>
 
     <div class="box">
         <h2>List an Item or Service</h2>
+        <div id="verifiedBadge">Verifying seller record identity...</div>
+        <br>
         <form onsubmit="postItem(event)">
-            <label>Item Name</label>
-            <input type="text" id="title" required placeholder="e.g., iPhone 11 Pro">
+            <label>Item Name / Service Title *</label>
+            <input type="text" id="title" required placeholder="e.g., Brand New Oppo Reno8 T 5G">
 
-            <label>Price (PGK Kina)</label>
-            <input type="number" id="price" required placeholder="e.g., 1200">
+            <label>Price (PGK Kina) *</label>
+            <input type="number" id="price" required placeholder="e.g., 1400">
 
-            <label>Your Suburb / Location</label>
+            <label>Your Suburb Location *</label>
             <select id="location">
                 <option value="Waigani">Waigani</option>
                 <option value="Boroko">Boroko</option>
@@ -35,43 +42,73 @@
                 <option value="Downtown">Downtown / Town</option>
             </select>
 
-            <label>Description & Contact Details</label>
-            <textarea id="desc" rows="4" required placeholder="Describe condition. Include your phone number so buyers can reach out."></textarea>
+            <label>Product Details & Contact Details *</label>
+            <textarea id="desc" rows="4" required placeholder="Describe condition, specifications, and handover delivery arrangements inside Port Moresby..."></textarea>
 
-            <button type="submit" class="btn">Publish Live</button>
+            <button type="submit" class="btn">Publish to Marketplace</button>
         </form>
     </div>
 
     <script>
+        // CRITICAL ACTION: Paste your real keys inside these quotation marks!
         const SUPABASE_URL = "YOUR_SUPABASE_URL_HERE";
         const SUPABASE_KEY = "YOUR_SUPABASE_ANON_KEY_HERE";
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        let activeUser = null;
+
+        async function protectPage() {
+            const { data: { user } } = await supabaseClient.auth.getUser();
+            if (!user) {
+                alert("Access Denied! Please register or log in first on the home page.");
+                window.location.href = "index.html";
+                return;
+            }
+
+            // Fetch profile data rows to confirm genuine identity requirements are verified
+            const { data: profile, error } = await supabaseClient
+                .from('profiles')
+                .select('*')
+                .eq('id', user.id)
+                .single();
+
+            if (error || !profile) {
+                alert("Identity Error: Genuine account profile matching record was not found.");
+                window.location.href = "index.html";
+            } else {
+                activeUser = user;
+                const displayName = profile.is_company ? profile.company_name + " (Verified Business)" : profile.full_name + " (Individual Seller)";
+                document.getElementById('verifiedBadge').innerHTML = `
+                    <div class="profile-badge">🟩 Verified Identity: <strong>${displayName}</strong><br>📞 Contact Link: ${profile.phone_number}</div>
+                `;
+            }
+        }
 
         async function postItem(event) {
             event.preventDefault();
             const t = document.getElementById('title').value.trim();
-            const p = parseFloat(document.getElementById('price').value);
+            const p = document.getElementById('price').value;
             const l = document.getElementById('location').value;
             const d = document.getElementById('desc').value.trim();
 
-            try {
-                const response = await fetch(`${SUPABASE_URL}/rest/v1/products`, {
-                    method: 'POST',
-                    headers: {
-                        'apikey': SUPABASE_KEY,
-                        'Authorization': `Bearer ${SUPABASE_KEY}`,
-                        'Content-Type': 'application/json',
-                        'Prefer': 'return=minimal'
-                    },
-                    body: JSON.stringify({ title: t, price_pgk: p, location: l, description: d })
-                });
+            const { error } = await supabaseClient.from('products').insert([{ 
+                title: t, 
+                price_pgk: p, 
+                location: l, 
+                description: d,
+                seller_id: activeUser.id,
+                seller_email: activeUser.email
+            }]);
 
-                if (!response.ok) throw new Error("Server rejected entry.");
-                alert('Product is now Live!');
-                location.reload();
-            } catch (err) {
-                alert('Upload failed: ' + err.message + '. Check your Supabase RLS permission rules.');
+            if (error) { 
+                alert('Upload failed: ' + error.message); 
+            } else { 
+                alert('Product is now Live on the market feed!'); 
+                window.location.href = "index.html"; 
             }
         }
+
+        window.onload = protectPage;
     </script>
 </body>
 </html>
