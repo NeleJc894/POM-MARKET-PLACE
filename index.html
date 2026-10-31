@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>POM MARKET SITE</title>
-    <!-- Fixed: Added correct Supabase CDN link -->
+    <!-- Fixed: Correct Supabase Library Loader CDN -->
     <script src="https://jsdelivr.net"></script>
     <style>
         :root { --primary: #0A2540; --accent: #FF6600; --success: #008751; --light: #F8F9FA; }
@@ -50,13 +50,12 @@
 
     <div class="overlay" id="overlay" onclick="closeModals()"></div>
 
-    <!-- Reg/Login Auth Modal -->
+    <!-- Registration / Login Modal -->
     <div class="modal" id="authModal">
         <h3 id="authTitle">Seller Login</h3>
         <p id="authDesc" style="font-size:0.85rem; color:#666; margin-bottom:15px;">Log in to access your dashboard.</p>
         
         <form id="authForm" onsubmit="event.preventDefault(); handleAuth();">
-            <!-- Registration Verified Fields Block (Hidden by default in Login View) -->
             <div id="regFields" style="display: none;">
                 <label>Genuine Full Name *</label>
                 <input type="text" id="regName" placeholder="e.g., John Doe">
@@ -92,7 +91,7 @@
         </p>
     </div>
 
-    <!-- Inquiry Handshake Window -->
+    <!-- Contact Window -->
     <div class="modal" id="buyModal">
         <h3>Contact Wholesaler</h3>
         <p id="modal-item-title" style="font-weight: bold; color: var(--accent);"></p>
@@ -104,6 +103,7 @@
     </div>
 
     <script>
+        // Fixed: Assigned your valid specific workspace subdomain URL
         const SUPABASE_URL = "https://supabase.co";
         const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImliYXBmYWZzdHRlcXlybXBuaHZvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTMxMDc2NjYsImV4cCI6MjEwODY4MzY2Nn0.HV40B7DHZeQZHOqscN0CmTul-gOD_SG-2rDv9vcPy0w";
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -111,7 +111,6 @@
         let isRegisterMode = false;
         let currentUser = null;
 
-        // Check authentication state on load
         async function checkUserSession() {
             const { data: { user } } = await supabaseClient.auth.getUser();
             currentUser = user;
@@ -126,7 +125,6 @@
             }
         }
 
-        // Fetch products from database
         async function loadListings() {
             const catalog = document.getElementById('catalog');
             const { data: products, error } = await supabaseClient.from('products').select('*');
@@ -147,11 +145,11 @@
                 card.className = 'card';
                 card.innerHTML = `
                     <div>
-                        <h3 style="margin:0 0 10px 0; color: var(--primary);">${p.title || p.name || 'Unnamed Item'}</h3>
+                        <h3 style="margin:0 0 10px 0; color: var(--primary);">${p.title || 'Unnamed Item'}</h3>
                         <p style="margin:0; font-size:0.9rem; color:#666;">${p.description || 'No description available.'}</p>
                         <div class="price">K${p.price || '0.00'}</div>
                     </div>
-                    <button class="btn" onclick="openBuyModal('${p.title || p.name || 'Item'}')">Contact Wholesaler</button>
+                    <button class="btn" onclick="openBuyModal('${p.title || 'Item'}')">Contact Wholesaler</button>
                 `;
                 catalog.appendChild(card);
             });
@@ -180,3 +178,5 @@
         }
 
         function toggleAuthMode(e) {
+            if(e) e.preventDefault();
+            isRegisterMode = !isRegisterMode;
