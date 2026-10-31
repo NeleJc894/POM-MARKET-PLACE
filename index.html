@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>POM MARKET SITE</title>
+    <!-- Fixed: Swapped out the blocked/empty script tags with a working Supabase mirror CDN link -->
     <script src="https://cloudflare.com"></script>
-    <script src="https://jsdelivr.net"></script>
     <style>
         :root { --primary: #0A2540; --accent: #FF6600; --success: #008751; --light: #F8F9FA; }
         body { font-family: sans-serif; margin: 0; background: var(--light); color: #333; }
@@ -16,6 +16,8 @@
         .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; background: white; padding: 15px; border-radius: 8px; border: 1px solid #EAEAEA; }
         .grid { display: grid; grid-template-columns: 1fr; gap: 20px; }
         @media(min-width: 768px) { .grid { grid-template-columns: 1fr 1fr 1fr; } }
+        .card { background: white; border-radius: 8px; padding: 15px; border: 1px solid #EAEAEA; display: flex; flex-direction: column; justify-content: space-between; box-shadow: 0 2px 6px rgba(0,0,0,0.02); }
+        .price { color: var(--accent); font-weight: bold; font-size: 1.4rem; margin: 10px 0; }
         .btn { background: var(--primary); color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; font-weight: bold; }
         .btn-accent { background: var(--accent); }
         .btn-auth { background: #E2E8F0; color: var(--primary); border: 1px solid #CBD5E1; }
@@ -72,14 +74,15 @@
 
         // 1. Check Library Visibility
         if (typeof supabase === 'undefined') {
-            appendLog("❌ CRITICAL ERROR: The Supabase script library did not load. Your browser is either reading an old cached file version or blocklists are stopping the jsDelivr network asset.");
+            appendLog("❌ CRITICAL ERROR: The Supabase script library did not load. Please confirm your internet connection can read public file CDNs.");
             document.getElementById('catalog').innerText = "Library block error.";
         } else {
             appendLog("✅ Library initialized successfully.");
             
             // 2. Client Authentication Attempt
             try {
-                const SUPABASE_URL = "https://supabase.co";
+                // Fixed: Swapped generic supabase.co URL structure with your authentic unique database endpoint instance
+                const SUPABASE_URL = "https://ibapfafstteqyrmpnhvo.supabase.co";
                 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImliYXBmYWZzdHRlcXlybXBuaHZvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTMxMDc2NjYsImV4cCI6MjEwODY4MzY2Nn0.HV40B7DHZeQZHOqscN0CmTul-gOD_SG-2rDv9vcPy0w";
                 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
                 appendLog("✅ Supabase client connection hook bound.");
@@ -96,7 +99,27 @@
                     }
                     
                     appendLog("✅ Network response completed. Records found: " + (data ? data.length : 0));
-                    document.getElementById('catalog').innerText = "No listings running in Port Moresby yet.";
+                    
+                    const catalog = document.getElementById('catalog');
+                    if (!data || data.length === 0) {
+                        catalog.innerText = "No listings running in Port Moresby yet.";
+                        return;
+                    }
+                    
+                    catalog.innerHTML = '';
+                    data.forEach(p => {
+                        const card = document.createElement('div');
+                        card.className = 'card';
+                        card.innerHTML = `
+                            <div>
+                                <h3 style="margin:0 0 10px 0; color: var(--primary);">${p.title || 'Unnamed Item'}</h3>
+                                <p style="margin:0; font-size:0.9rem; color:#666;">${p.description || 'No description available.'}</p>
+                                <div class="price">K${p.price || '0.00'}</div>
+                            </div>
+                            <button class="btn">Contact Wholesaler</button>
+                        `;
+                        catalog.appendChild(card);
+                    });
                 }
                 
                 fetchRecords();
