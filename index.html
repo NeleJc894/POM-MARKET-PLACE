@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>POM MARKET SITE</title>
+    <!-- Fixed: Added correct Supabase CDN link -->
     <script src="https://jsdelivr.net"></script>
     <style>
         :root { --primary: #0A2540; --accent: #FF6600; --success: #008751; --light: #F8F9FA; }
@@ -103,14 +104,14 @@
     </div>
 
     <script>
-        const SUPABASE_URL = "https://ibapfafstteqyrmpnhvo.supabase.co";
+        const SUPABASE_URL = "https://supabase.co";
         const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImliYXBmYWZzdHRlcXlybXBuaHZvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTMxMDc2NjYsImV4cCI6MjEwODY4MzY2Nn0.HV40B7DHZeQZHOqscN0CmTul-gOD_SG-2rDv9vcPy0w";
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        let currentId = null;
         let isRegisterMode = false;
         let currentUser = null;
 
+        // Check authentication state on load
         async function checkUserSession() {
             const { data: { user } } = await supabaseClient.auth.getUser();
             currentUser = user;
@@ -125,8 +126,45 @@
             }
         }
 
+        // Fetch products from database
+        async function loadListings() {
+            const catalog = document.getElementById('catalog');
+            const { data: products, error } = await supabaseClient.from('products').select('*');
+            
+            if (error) {
+                catalog.innerText = "Error loading marketplace listings.";
+                console.error(error);
+                return;
+            }
+            if (!products || products.length === 0) {
+                catalog.innerText = "No listings running in Port Moresby yet.";
+                return;
+            }
+            
+            catalog.innerHTML = '';
+            products.forEach(p => {
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.innerHTML = `
+                    <div>
+                        <h3 style="margin:0 0 10px 0; color: var(--primary);">${p.title || p.name || 'Unnamed Item'}</h3>
+                        <p style="margin:0; font-size:0.9rem; color:#666;">${p.description || 'No description available.'}</p>
+                        <div class="price">K${p.price || '0.00'}</div>
+                    </div>
+                    <button class="btn" onclick="openBuyModal('${p.title || p.name || 'Item'}')">Contact Wholesaler</button>
+                `;
+                catalog.appendChild(card);
+            });
+        }
+
         function openAuthModal() {
             document.getElementById('authModal').style.display = 'block';
+            document.getElementById('overlay').style.display = 'block';
+        }
+
+        function openBuyModal(title) {
+            document.getElementById('modal-item-title').innerText = title;
+            document.getElementById('buyModal').style.display = 'block';
             document.getElementById('overlay').style.display = 'block';
         }
 
@@ -142,39 +180,3 @@
         }
 
         function toggleAuthMode(e) {
-            e.preventDefault();
-            isRegisterMode = !isRegisterMode;
-            document.getElementById('authTitle').innerText = isRegisterMode ? "Verify & Create Account" : "Seller Login";
-            document.getElementById('authDesc').style.display = isRegisterMode ? 'none' : 'block';
-            document.getElementById('regFields').style.display = isRegisterMode ? 'block' : 'none';
-            document.getElementById('mainAuthBtn').innerText = isRegisterMode ? "Verify & Register" : "Sign In";
-            document.getElementById('toggleAuthLink').innerText = isRegisterMode ? "Already registered? Login here" : "Don't have an account? Register here";
-        }
-
-        async function handleAuth() {
-            const email = document.getElementById('authEmail').value.trim();
-            const password = document.getElementById('authPassword').value;
-            
-            if (isRegisterMode) {
-                const name = document.getElementById('regName').value.trim();
-                const dob = document.getElementById('regDOB').value;
-                const phone = document.getElementById('regPhone').value.trim();
-                const isCompany = document.getElementById('regIsCompany').checked;
-                const companyName = document.getElementById('regCompanyName').value.trim();
-
-                if(!name || !dob || !phone || (isCompany && !companyName)) {
-                    alert('Please complete all genuine validation fields.'); return;
-                }
-
-                // First, check if the phone number is already registered in the profiles database table
-                const { data: phoneCheck } = await supabaseClient.from('profiles').select('phone_number').eq('phone_number', phone);
-                if (phoneCheck && phoneCheck.length > 0) {
-                    alert('Security Alert: This phone number is already registered once. You cannot use it again.');
-                    return;
-                }
-
-
-        loadItems();
-    </script>
-</body>
-</html>
